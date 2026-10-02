@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Text Reader – Red Dark</title>
+<style>
+:root{--bg:#0d0708;--card:#1a0c0e;--ink:#f3e6e6;--mut:#b08a8d;--acc:#e5262f;--acc2:#ff5a5f;--bd:#3b1a1e;--hl:#2a1013;color-scheme:dark;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Devanagari",sans-serif;line-height:1.5}
+main{max-width:760px;margin:0 auto;padding:18px 16px 40px}
+h1{font-size:22px;margin:4px 0 2px;color:var(--acc2)}
+p.sub{margin:0 0 14px;color:var(--mut);font-size:14px}
+textarea{width:100%;min-height:200px;resize:vertical;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:17px}
+textarea:focus,select:focus{outline:2px solid var(--acc);border-color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-top:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-weight:600;padding:12px 18px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--ink);cursor:pointer;min-height:46px}
+button.primary{background:var(--acc);color:#fff;border-color:var(--acc);flex:1 1 130px;box-shadow:0 0 18px rgba(229,38,47,.35)}
+button:disabled{opacity:.4;cursor:not-allowed}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:4px}
+label span{float:right;color:var(--acc2);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--acc)}
+select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--ink);font:inherit}
+.ctl{margin-bottom:14px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin-bottom:10px}
+.chk label{margin:0;font-weight:500}
+.chk small{display:block;color:var(--mut)}
+#now{background:var(--hl);border:1px solid var(--bd);border-radius:10px;padding:12px;font-size:19px;min-height:60px;margin-top:12px}
+#bar{height:6px;background:var(--bd);border-radius:4px;margin-top:10px;overflow:hidden}
+#bar i{display:block;height:100%;width:0;background:var(--acc)}
+#st{font-size:13px;color:var(--mut);margin-top:6px}
+.h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.h b{color:var(--acc2)}
+.h button{min-height:36px;padding:6px 14px;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>🔊 Text Reader</h1>
+<p class="sub">Text paste karo, Run dabao — jab tak Stop na karo, padhta rahega.</p>
+
+<textarea id="txt" placeholder="Yahan apna text paste karo (Hindi / English / Hinglish, kitna bhi lamba)…"></textarea>
+
+<div class="row" style="margin-top:12px">
+  <button class="primary" id="run">▶ Run</button>
+  <button id="pause" disabled>⏸ Pause</button>
+  <button id="stop" disabled>⏹ Stop</button>
+</div>
+
+<div id="now" hidden></div>
+<div id="bar" hidden><i></i></div>
+<div id="st"></div>
+
+<div class="card">
+  <div class="ctl">
+    <label>Style (preset)</label>
+    <select id="preset">
+      <option value="normal">Normal</option>
+      <option value="deep">🧘 Deep Meditation (gehri, dheemi)</option>
+      <option value="calm">🌙 Calm Story (shant)</option>
+      <option value="fast">⚡ Fast Reader</option>
+    </select>
+  </div>
+  <div class="ctl">
+    <label>Voice (⭐ = zyada human jaisi)</label>
+    <select id="voice"><option value="">Auto (bhasha ke hisab se)</option></select>
+  </div>
+</div>
+
+<div class="card">
+  <div class="h"><b>Awaaz settings</b><button id="reset">↺ Reset</button></div>
+  <div class="ctl"><label>Speed <span id="rv"></span></label><input type="range" id="rate" min="0.4" max="2.5" step="0.05" value="1"></div>
+  <div class="ctl"><label>Pitch (kam = gehri awaaz) <span id="pv"></span></label><input type="range" id="pitch" min="0.1" max="2" step="0.05" value="1"></div>
+  <div class="ctl"><label>Volume <span id="vv"></span></label><input type="range" id="vol" min="0" max="1" step="0.05" value="1"></div>
+  <div class="ctl"><label>Vakya ke beech ruk (meditation ke liye) <span id="gv"></span></label><input type="range" id="gap" min="0" max="5" step="0.5" value="0"></div>
+</div>
+
+<div class="card">
+  <div class="chk"><input type="checkbox" id="loop"><label for="loop">Loop — khatam hone par phir se shuru</label></div>
+  <div class="chk"><input type="checkbox" id="wake" checked><label for="wake">Screen on rakho (padhte waqt phone lock na ho)</label></div>
+  <div class="chk"><input type="checkbox" id="keep"><label for="keep">Background keep-alive (silent audio)<small>Page ko background me chalu rakhne me madad karta hai. Kabhi Spotify/YouTube ko pause kar sakta hai — aisa ho to isse band karo.</small></label></div>
+</div>
+
+<div class="card" style="font-size:14px;color:var(--mut)">
+<b style="color:var(--acc2)">Music ke saath kaise chalayein?</b><br>
+• <b>PC:</b> ye tab khula rakho, dusre tab me YouTube/Spotify chalao — dono saath chalte hain.<br>
+• <b>Android:</b> Split-screen ya floating window me Spotify/YouTube kholo, screen on rakho. Screen off hone par browser aksar awaaz rok deta hai.<br>
+• <b>Sabse human jaisi awaaz:</b> Microsoft Edge kholo — usme free "Neural / Natural" voices (Hindi: Swara, Madhur) milti hain. Chrome me "Google हिन्दी" / "Google UK English" ⭐ dikhengi.
+</div>
+</main>
+
+<script>
+(function(){
+  var synth = window.speechSynthesis;
+  var $ = function(id){return document.getElementById(id)};
+  var txt=$('txt'), run=$('run'), pauseB=$('pause'), stopB=$('stop'), now=$('now'), bar=$('bar'), st=$('st');
+  var rate=$('rate'), pitch=$('pitch'), vol=$('vol'), gap=$('gap'), voiceSel=$('voice'), loop=$('loop'), preset=$('preset');
+  var wakeC=$('wake'), keepC=$('keep');
+  var voices=[], chunks=[], idx=0, session=0, playing=false, gapTimer=null, wakeLock=null, keepAudio=null;
+
+  if(!synth){ st.textContent='Browser text-to-speech support nahi karta. Edge ya Chrome try karo.'; run.disabled=true; return; }
+
+  var PRESETS={
+    normal:{rate:1,pitch:1,vol:1,gap:0},
+    deep:{rate:0.7,pitch:0.3,vol:1,gap:2},
+    calm:{rate:0.85,pitch:0.8,vol:1,gap:0.5},
+    fast:{rate:1.6,pitch:1,vol:1,gap:0}
+  };
+  function labels(){
+    $('rv').textContent=(+rate.value).toFixed(2)+'x';
+    $('pv').textContent=(+pitch.value).toFixed(2);
+    $('vv').textContent=Math.round(vol.value*100)+'%';
+    $('gv').textContent=(+gap.value).toFixed(1)+'s';
+  }
+  [rate,pitch,vol,gap].forEach(function(e){e.addEventListener('input',labels)});
+  function applyPreset(){
+    var p=PRESETS[preset.value];
+    rate.value=p.rate; pitch.value=p.pitch; vol.value=p.vol; gap.value=p.gap; labels();
+  }
+  preset.addEventListener('change',applyPreset);
+  $('reset').addEventListener('click',applyPreset);
+  applyPreset();
+
+  var GOOD=/natural|neural|online|google|enhanced|premium|siri/i;
+  function loadVoices(){
+    voices=synth.getVoices();
+    var cur=voiceSel.value;
+    var order=voices.map(function(v,i){return i}).sort(function(a,b){
+      function sc(v){var s=0; if(/^hi/i.test(v.lang))s-=4; else if(/^en-(IN|GB|US)/i.test(v.lang))s-=2; else if(/^en/i.test(v.lang))s-=1; if(GOOD.test(v.name))s-=8; return s;}
+      return sc(voices[a])-sc(voices[b]);
+    });
+    voiceSel.innerHTML='<option value="">Auto (bhasha ke hisab se)</option>';
+    order.forEach(function(i){
+      var v=voices[i], o=document.createElement('option');
+      o.value=i; o.textContent=(GOOD.test(v.name)?'⭐ ':'')+v.name+' ('+v.lang+')';
+      voiceSel.appendChild(o);
+    });
+    voiceSel.value=cur;
+  }
+  loadVoices();
+  if(synth.onvoiceschanged!==undefined) synth.onvoiceschanged=loadVoices;
+
+  var MALE=/madhur|hemant|prabhat|ravi|david|mark|guy|ryan|james|george|male/i;
+  function pickVoice(text){
+    if(voiceSel.value!=='') return voices[+voiceSel.value];
+    var hindi=/[\u0900-\u097F]/.test(text);
+    var langs=hindi?['hi']:['en-in','en-gb','en-us','en'];
+    var pool=[];
+    langs.forEach(function(l){ voices.forEach(function(v){ if(v.lang.replace('_','-').toLowerCase().indexOf(l)===0 && pool.indexOf(v)<0) pool.push(v); }); });
+    if(!pool.length) return null;
+    var best=pool.filter(function(v){return GOOD.test(v.name)});
+    if(preset.value==='deep'){ var m=(best.length?best:pool).filter(function(v){return MALE.test(v.name)}); if(m.length) return m[0]; }
+    return (best.length?best:pool)[0];
+  }
+
+  function makeChunks(t){
+    var parts=t.replace(/\r/g,'').split(/(?<=[.!?।॥\n])\s*/);
+    var out=[], buf='', lim=preset.value==='deep'?120:180;
+    parts.forEach(function(p){
+      p=p.trim(); if(!p) return;
+      if(p.length>220){
+        if(buf){out.push(buf);buf='';}
+        var line=''; p.split(/\s+/).forEach(function(w){ if((line+' '+w).length>200){out.push(line.trim());line=w;} else line+=' '+w; });
+        if(line.trim()) out.push(line.trim());
+        return;
+      }
+      if((buf+' '+p).length>lim){ if(buf) out.push(buf); buf=p; } else buf=buf?buf+' '+p:p;
+    });
+    if(buf) out.push(buf);
+    return out;
+  }
+
+  // ---- background helpers ----
+  function silentWav(){
+    var n=8000, b=new Uint8Array(44+n), d=new DataView(b.buffer);
+    function s(o,t){for(var i=0;i<t.length;i++)b[o+i]=t.charCodeAt(i)}
+    s(0,'RIFF');d.setUint32(4,36+n,true);s(8,'WAVEfmt ');d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);
+    d.setUint32(24,8000,true);d.setUint32(28,8000,true);d.setUint16(32,1,true);d.setUint16(34,8,true);s(36,'data');d.setUint32(40,n,true);
+    for(var i=0;i<n;i++)b[44+i]=128;
+    var bin='';for(var j=0;j<b.length;j++)bin+=String.fromCharCode(b[j]);
+    return 'data:audio/wav;base64,'+btoa(bin);
+  }
+  function startBg(){
+    try{ if(wakeC.checked && navigator.wakeLock){ navigator.wakeLock.request('screen').then(function(l){wakeLock=l}).catch(function(){}); } }catch(e){}
+    try{
+      if(keepC.checked){
+        if(!keepAudio){ keepAudio=new Audio(silentWav()); keepAudio.loop=true; }
+        keepAudio.play().catch(function(){});
+        if('mediaSession' in navigator){
+          navigator.mediaSession.metadata=new MediaMetadata({title:'Text Reader',artist:'Padh raha hai…'});
+          navigator.mediaSession.setActionHandler('pause',function(){pauseB.click()});
+          navigator.mediaSession.setActionHandler('play',function(){pauseB.click()});
+          navigator.mediaSession.setActionHandler('stop',function(){stopB.click()});
+        }
+      }
+    }catch(e){}
+  }
+  function stopBg(){
+    try{ if(wakeLock){wakeLock.release();wakeLock=null;} }catch(e){}
+    try{ if(keepAudio){keepAudio.pause();} }catch(e){}
+  }
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible' && playing && wakeC.checked && navigator.wakeLock && !wakeLock){
+      navigator.wakeLock.request('screen').then(function(l){wakeLock=l}).catch(function(){});
+    }
+  });
+
+  function setUI(active){
+    playing=active; run.disabled=active; stopB.disabled=!active; pauseB.disabled=!active;
+    pauseB.textContent='⏸ Pause'; now.hidden=!active; bar.hidden=!active;
+    if(!active) stopBg();
+  }
+
+  function speakNext(my){
+    if(my!==session) return;
+    if(idx>=chunks.length){
+      if(loop.checked && chunks.length){ idx=0; } else { setUI(false); st.textContent='Padhna poora hua ✅'; return; }
+    }
+    var text=chunks[idx];
+    now.textContent=text;
+    bar.firstElementChild.style.width=Math.round(idx/chunks.length*100)+'%';
+    st.textContent='Hissa '+(idx+1)+' / '+chunks.length;
+    var u=new SpeechSynthesisUtterance(text);
+    u.rate=+rate.value; u.pitch=+pitch.value; u.volume=+vol.value;
+    var v=pickVoice(text);
+    if(v){u.voice=v;u.lang=v.lang;} else if(/[\u0900-\u097F]/.test(text)){u.lang='hi-IN';}
+    function next(){
+      if(my!==session) return;
+      idx++;
+      var g=+gap.value*1000;
+      if(g>0){ gapTimer=setTimeout(function(){speakNext(my)},g); } else speakNext(my);
+    }
+    u.onend=next;
+    u.onerror=function(e){ if(my!==session) return; if(e.error==='canceled'||e.error==='interrupted') return; next(); };
+    synth.speak(u);
+  }
+
+  run.addEventListener('click',function(){
+    var t=txt.value.trim();
+    if(!t){ st.textContent='Pehle kuch text paste karo.'; return; }
+    synth.cancel(); clearTimeout(gapTimer); session++;
+    chunks=makeChunks(t); idx=0;
+    setUI(true); startBg(); speakNext(session);
+  });
+  stopB.addEventListener('click',function(){
+    session++; clearTimeout(gapTimer); synth.cancel(); setUI(false); st.textContent='Ruk gaya. Run dabao to shuru se padhega.';
+  });
+  pauseB.addEventListener('click',function(){
+    if(synth.paused){ synth.resume(); pauseB.textContent='⏸ Pause'; if(keepAudio&&keepC.checked)keepAudio.play().catch(function(){}); }
+    else { synth.pause(); pauseB.textContent='▶ Resume'; }
+  });
+  window.addEventListener('beforeunload',function(){ synth.cancel(); });
+})();
+</script>
+</body>
+</html>
